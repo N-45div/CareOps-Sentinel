@@ -15,22 +15,22 @@
     "smoke": "esbuild src/smoke.ts --bundle --platform=node --format=esm --outfile=dist-smoke/smoke.mjs && node dist-smoke/smoke.mjs"
   },
   "dependencies": {
-    "lucide-react": "^0.468.0",
-    "next": "^15.5.18",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "xmcp": "^0.6.9",
-    "zod": "^3.25.76"
+    "lucide-react": "0.468.0",
+    "next": "15.5.18",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "xmcp": "0.6.9",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^22.15.3",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "esbuild": "^0.25.3",
-    "eslint": "^9.39.4",
-    "tsx": "^4.19.4",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.2"
+    "@types/node": "22.15.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "esbuild": "0.25.3",
+    "eslint": "9.39.4",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3",
+    "vitest": "3.1.2"
   },
   "engines": {
     "node": ">=20"
