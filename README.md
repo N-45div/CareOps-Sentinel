@@ -87,6 +87,12 @@ It lets a reviewer:
 3. run a CareOps Sentinel audit;
 4. inspect verdict, risk score, grounding, unsafe language, safe rewrite, and review task payload.
 
+Production deployment:
+
+```txt
+https://careops-sentinel-console.vercel.app
+```
+
 Run locally:
 
 ```bash
@@ -167,4 +173,3 @@ npm run test
 npm run web:build
 npm run build
 ```
-
