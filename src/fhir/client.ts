@@ -109,7 +109,7 @@ export class FhirClient {
     } catch {
       const contentType = response.headers.get("content-type") ?? "unknown content type";
       throw new Error(
-        `FHIR server returned non-JSON content from ${joinUrl(this.baseUrl, path)} (${contentType}). Check that the FHIR base URL, patient ID, and access token came from the same Prompt Opinion FHIR Context modal.`
+        `FHIR server returned non-JSON content (${contentType}). Check that the FHIR base URL, patient ID, and access token came from the same Prompt Opinion FHIR Context modal.`
       );
     }
   }

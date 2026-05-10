@@ -91,12 +91,18 @@ export default function Page() {
     setReview(null);
 
     try {
+      const normalizedPatientId = normalizePatientIdInput(patientId);
+
+      if (!normalizedPatientId) {
+        throw new Error("Paste the x-patient-id value from Prompt Opinion FHIR Context. Do not paste the FHIR base URL into Patient ID.");
+      }
+
       const response = await fetch("/api/review", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          fhirBaseUrl,
-          patientId,
+          fhirBaseUrl: fhirBaseUrl.trim(),
+          patientId: normalizedPatientId,
           bearerToken,
           workflowType,
           agentName,
@@ -111,7 +117,7 @@ export default function Page() {
 
       setReview(payload);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Review failed");
+      setError(toUserFacingError(caught));
     } finally {
       setIsRunning(false);
     }
@@ -119,6 +125,16 @@ export default function Page() {
 
   return (
     <main>
+      {error && (
+        <div className="toastError" role="status" aria-live="polite">
+          <AlertTriangle size={18} aria-hidden="true" />
+          <div>
+            <strong>Audit could not run</strong>
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
       <header className="appHeader">
         <div className="brandBlock">
           <div className="brandMark">
@@ -236,7 +252,7 @@ export default function Page() {
           {error && (
             <div className="formError">
               <AlertTriangle size={17} aria-hidden="true" />
-              <span>{error}</span>
+              <span>Check the FHIR Context values and try again.</span>
             </div>
           )}
 
@@ -264,7 +280,7 @@ export default function Page() {
           </section>
 
           <section className="reviewGrid">
-            <article className="panel">
+            <article className="panel resultPanel">
               <div className="panelTitle">
                 <FileCheck2 size={18} aria-hidden="true" />
                 <h3>FHIR Grounding</h3>
@@ -275,10 +291,11 @@ export default function Page() {
                   title: finding.claim,
                   detail: `${finding.status.replaceAll("_", " ")} | ${finding.rationale}`
                 }))}
+                limit={4}
               />
             </article>
 
-            <article className="panel">
+            <article className="panel resultPanel">
               <div className="panelTitle">
                 <AlertTriangle size={18} aria-hidden="true" />
                 <h3>Unsafe Language</h3>
@@ -289,12 +306,13 @@ export default function Page() {
                   title: `${finding.phrase} (${finding.severity})`,
                   detail: `${finding.rationale} Safer: ${finding.saferAlternative}`
                 }))}
+                limit={3}
               />
             </article>
           </section>
 
           <section className="bottomGrid">
-            <article className="panel">
+            <article className="panel compactResult">
               <div className="panelTitle">
                 <UserCheck size={18} aria-hidden="true" />
                 <h3>Clinician Review Recommendation</h3>
@@ -305,7 +323,7 @@ export default function Page() {
               </p>
             </article>
 
-            <article className="panel">
+            <article className="panel compactResult">
               <div className="panelTitle">
                 <ClipboardCheck size={18} aria-hidden="true" />
                 <h3>Safe Rewrite</h3>
@@ -317,7 +335,7 @@ export default function Page() {
             </article>
           </section>
 
-          <section className="panel">
+          <section className="panel taskPanel">
             <div className="panelTitle rowBetween">
               <div>
                 <p className="sectionKicker">Review task payload</p>
@@ -399,19 +417,72 @@ function Metric({ value, label, tone }: { value: string; label: string; tone?: "
   );
 }
 
-function ResultList({ empty, items }: { empty: string; items?: Array<{ title: string; detail: string }> }) {
+function ResultList({
+  empty,
+  items,
+  limit
+}: {
+  empty: string;
+  items?: Array<{ title: string; detail: string }>;
+  limit?: number;
+}) {
   if (!items?.length) {
     return <p className="muted">{empty}</p>;
   }
 
+  const visibleItems = typeof limit === "number" ? items.slice(0, limit) : items;
+  const hiddenCount = items.length - visibleItems.length;
+
   return (
     <div className="resultList">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <div className="resultItem" key={`${item.title}-${item.detail}`}>
           <strong>{item.title}</strong>
           <span>{item.detail}</span>
         </div>
       ))}
+      {hiddenCount > 0 && <div className="moreFindings">+ {hiddenCount} more finding(s) in the audit packet</div>}
     </div>
   );
+}
+
+function normalizePatientIdInput(value: string): string {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  const patientPathMatch = trimmed.match(/(?:^|\/)Patient\/([^/?#]+)/i);
+  if (patientPathMatch?.[1]) {
+    return decodeURIComponent(patientPathMatch[1]);
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return "";
+  }
+
+  return trimmed.replace(/^Patient\//i, "");
+}
+
+function toUserFacingError(caught: unknown): string {
+  const message = caught instanceof Error ? caught.message : "Review failed.";
+
+  if (message.includes("401")) {
+    return "FHIR authorization failed. Regenerate the token from Prompt Opinion FHIR Context and paste the matching base URL, patient ID, and token.";
+  }
+
+  if (message.includes("non-JSON content")) {
+    return "FHIR returned a non-JSON page. This usually means the base URL or patient ID was pasted into the wrong field.";
+  }
+
+  if (message.includes("x-patient-id")) {
+    return message;
+  }
+
+  if (message.includes("fhirBaseUrl") || message.includes("patientId") || message.includes("draftOutput")) {
+    return "FHIR base URL, patient ID, and agent output are required before running an audit.";
+  }
+
+  return message;
 }
