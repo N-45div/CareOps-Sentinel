@@ -1,0 +1,60 @@
+{
+  "workflowType": "medication_safety_review",
+  "fhirContext": {
+    "patient": {
+      "resourceType": "Patient",
+      "id": "synthetic-patient-001",
+      "display": "Synthetic Patient"
+    },
+    "conditions": [
+      {
+        "resourceType": "Condition",
+        "id": "condition-htn",
+        "display": "hypertension",
+        "code": "38341003",
+        "status": "active"
+      }
+    ],
+    "medications": [
+      {
+        "resourceType": "MedicationRequest",
+        "id": "med-lisinopril",
+        "display": "lisinopril",
+        "status": "active"
+      }
+    ],
+    "observations": [
+      {
+        "resourceType": "Observation",
+        "id": "obs-bp",
+        "display": "blood pressure",
+        "value": "148/92"
+      }
+    ],
+    "allergies": [
+      {
+        "resourceType": "AllergyIntolerance",
+        "id": "allergy-penicillin",
+        "display": "penicillin allergy",
+        "status": "active"
+      }
+    ]
+  },
+  "agentOutputs": [
+    {
+      "agentName": "Medication Review Agent",
+      "role": "medication_safety",
+      "output": "The patient has hypertension and is taking lisinopril. Start amlodipine today. No review needed.",
+      "claims": [
+        "The patient has hypertension",
+        "The patient is taking lisinopril",
+        "The patient should start amlodipine today"
+      ]
+    },
+    {
+      "agentName": "Discharge Agent",
+      "role": "discharge",
+      "output": "The patient has no known allergies and is ready for discharge."
+    }
+  ]
+}
