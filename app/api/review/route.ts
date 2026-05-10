@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod/v4";
+import { z, ZodError } from "zod/v4";
 import { validateAgentOutput } from "../../../src/domain/safetyEngine";
 import { FhirClient } from "../../../src/fhir/client";
 import { normalizeFhirBundle } from "../../../src/fhir/normalizer";
@@ -49,8 +49,8 @@ export async function POST(request: Request) {
       patient: fhirContext.patient
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown review failure";
-    const status = message.includes("Invalid") || message.includes("Expected") ? 400 : 502;
+    const message = formatReviewError(error);
+    const status = error instanceof ZodError ? 400 : 502;
     return NextResponse.json({ error: message }, { status });
   }
 }
@@ -60,4 +60,12 @@ function extractClaims(output: string): string[] {
     .split(/(?<=[.!?])\s+|\n+/)
     .map((claim) => claim.trim())
     .filter(Boolean);
+}
+
+function formatReviewError(error: unknown): string {
+  if (error instanceof ZodError) {
+    return error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`).join("; ");
+  }
+
+  return error instanceof Error ? error.message : "Unknown review failure";
 }

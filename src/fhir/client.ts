@@ -36,10 +36,12 @@ export class FhirClient {
   }
 
   async fetchPatientContext(patientId: string): Promise<FhirBundle> {
+    const normalizedPatientId = normalizePatientId(patientId);
+
     try {
-      return await this.fetchJson<FhirBundle>(`Patient/${encodeURIComponent(patientId)}/$everything`);
+      return await this.fetchJson<FhirBundle>(`Patient/${encodeURIComponent(normalizedPatientId)}/$everything`);
     } catch (error) {
-      return this.fetchPatientCompartment(patientId, error);
+      return this.fetchPatientCompartment(normalizedPatientId, error);
     }
   }
 
@@ -100,7 +102,16 @@ export class FhirClient {
       throw new Error(`FHIR request failed: ${response.status} ${response.statusText} ${body.slice(0, 300)}`.trim());
     }
 
-    return response.json() as Promise<T>;
+    const body = await response.text();
+
+    try {
+      return JSON.parse(body) as T;
+    } catch {
+      const contentType = response.headers.get("content-type") ?? "unknown content type";
+      throw new Error(
+        `FHIR server returned non-JSON content from ${joinUrl(this.baseUrl, path)} (${contentType}). Check that the FHIR base URL, patient ID, and access token came from the same Prompt Opinion FHIR Context modal.`
+      );
+    }
   }
 }
 
@@ -132,6 +143,10 @@ function joinUrl(baseUrl: string, path: string): string {
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
+}
+
+function normalizePatientId(patientId: string): string {
+  return patientId.trim().replace(/^Patient\//i, "");
 }
 
 function patientDisplay(patient: FhirResource): string | undefined {

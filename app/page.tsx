@@ -217,6 +217,8 @@ export default function Page() {
               onChange={(event) => setBearerToken(event.target.value)}
               placeholder="Paste token from Prompt Opinion FHIR Context only when testing locally"
               type="password"
+              autoComplete="off"
+              spellCheck={false}
             />
           </label>
 
